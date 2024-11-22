@@ -45,7 +45,7 @@ class StackTwoCubesEnv(Env):
 
     - `"agent_pos"`: the joint angles of the robot arm in radians, shape (6,)
     - `"agent_vel"`: the joint velocities of the robot arm in radians per second, shape (6,)
-    - `"image_front"`: the front image of the camera of size (240, 320, 3)
+    - `"pixel"`: the front image of the camera of size (240, 320, 3)
     - `"image_top"`: the top image of the camera of size (240, 320, 3)
     - `"cube_red_pos"`: the position of the red cube, as (x, y, z)
     - `"cube_blue_pos"`: the position of the blue cube, as (x, y, z)
@@ -56,7 +56,7 @@ class StackTwoCubesEnv(Env):
     | ----------------- | --------- | --------- | -------- |
     | `"agent_pos"`      | ✓         | ✓         | ✓        |
     | `"agent_vel"`      | ✓         | ✓         | ✓        |
-    | `"image_front"`   | ✓         |           | ✓        |
+    | `"pixel"`   | ✓         |           | ✓        |
     | `"image_top"`     | ✓         |           | ✓        |
     | `"cube_red_pos"`  |           | ✓         | ✓        |
     | `"cube_blue_pos"` |           | ✓         | ✓        |
@@ -94,7 +94,7 @@ class StackTwoCubesEnv(Env):
             "agent_vel": spaces.Box(low=-10.0, high=10.0, shape=(6,)),
         }
         if self.observation_mode in ["image", "both"]:
-            observation_subspaces["image_front"] = spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
+            observation_subspaces["pixel"] = spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
             observation_subspaces["image_top"] = spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
             self.renderer = mujoco.Renderer(self.model)
         if self.observation_mode in ["state", "both"]:
@@ -224,7 +224,7 @@ class StackTwoCubesEnv(Env):
             observation["cube_blue_pos"] = self.data.qpos[self.blue_cube_dof_id:self.blue_cube_dof_id+3].astype(np.float32)
         if self.observation_mode in ["image", "both"]:
             self.renderer.update_scene(self.data, camera="camera_front")
-            observation["image_front"] = self.renderer.render()
+            observation["pixel"] = self.renderer.render()
             self.renderer.update_scene(self.data, camera="camera_top")
             observation["image_top"] = self.renderer.render()
         return observation
