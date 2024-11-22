@@ -279,6 +279,6 @@ class PickPlaceCubeEnv(Env):
         if self.render_mode == "human":
             self.viewer.close()
         if self.observation_mode in ["image", "both"]:
-            self.renderer._gl_context.delete()
+            self.renderer._gl_context.__del__()
         if self.render_mode == "rgb_array":
-            self.rgb_array_renderer._gl_context.delete()
+            self.rgb_array_renderer._gl_context.__del__()
