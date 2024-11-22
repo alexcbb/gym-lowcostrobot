@@ -15,7 +15,8 @@ for _ in range(3):
 
     # Step the environment
     observation, reward, terminted, truncated, info = env.step(action)
-    
+    plt.imshow(observation["pixels"])
+    plt.show()
     # Reset the environment if it's done
     # if terminted or truncated:
     #     observation, info = env.reset()

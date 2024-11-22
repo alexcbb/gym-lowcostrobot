@@ -92,9 +92,9 @@ class LiftCubeEnv(Env):
             "agent_vel": spaces.Box(low=-10.0, high=10.0, shape=(6,)),
         }
         if self.observation_mode in ["image", "both"]:
-            observation_subspaces["pixels"] = spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
-            observation_subspaces["image_top"] = spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
-            self.renderer = mujoco.Renderer(self.model)
+            observation_subspaces["pixels"] = spaces.Box(0, 255, shape=(128, 128, 3), dtype=np.uint8)
+            observation_subspaces["image_top"] = spaces.Box(0, 255, shape=(128, 128, 3), dtype=np.uint8)
+            self.renderer = mujoco.Renderer(self.model, height=128, width=128)
         if self.observation_mode in ["state", "both"]:
             observation_subspaces["cube_pos"] = spaces.Box(low=-10.0, high=10.0, shape=(3,))
         self.observation_space = gym.spaces.Dict(observation_subspaces)
@@ -107,7 +107,7 @@ class LiftCubeEnv(Env):
             self.viewer.cam.azimuth = -75
             self.viewer.cam.distance = 1
         elif self.render_mode == "rgb_array":
-            self.rgb_array_renderer = mujoco.Renderer(self.model, height=640, width=640)
+            self.rgb_array_renderer = mujoco.Renderer(self.model, height=128, width=128)
 
         # Set additional utils
         self.threshold_height = 0.5
