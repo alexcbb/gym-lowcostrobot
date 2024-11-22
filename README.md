@@ -161,6 +161,7 @@ Currently, our todo list is:
 
 - [x] Load and replay one `LeRobotDataset` in simulation
 - [x] Implement inverse kinematics in each environment, improvements remain very welcome
+- [ ] Adapt to LeRobot Gym-env format (cf. xarm and others)
 
 Training:
 

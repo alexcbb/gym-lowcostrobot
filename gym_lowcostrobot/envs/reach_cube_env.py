@@ -43,8 +43,8 @@ class ReachCubeEnv(Env):
 
     The observation space is a dictionary containing the following subspaces:
 
-    - `"arm_qpos"`: the joint angles of the robot arm in radians, shape (6,)
-    - `"arm_qvel"`: the joint velocities of the robot arm in radians per second, shape (6,)
+    - `"agent_pos"`: the joint angles of the robot arm in radians, shape (6,)
+    - `"agent_vel"`: the joint velocities of the robot arm in radians per second, shape (6,)
     - `"image_front"`: the front image of the camera of size (240, 320, 3)
     - `"image_top"`: the top image of the camera of size (240, 320, 3)
     - `"cube_pos"`: the position of the cube, as (x, y, z)
@@ -53,8 +53,8 @@ class ReachCubeEnv(Env):
 
     | Key             | `"image"` | `"state"` | `"both"` |
     | --------------- | --------- | --------- | -------- |
-    | `"arm_qpos"`    | ✓         | ✓         | ✓        |
-    | `"arm_qvel"`    | ✓         | ✓         | ✓        |
+    | `"agent_pos"`    | ✓         | ✓         | ✓        |
+    | `"agent_vel"`    | ✓         | ✓         | ✓        |
     | `"image_front"` | ✓         |           | ✓        |
     | `"image_top"`   | ✓         |           | ✓        |
     | `"cube_pos"`    |           | ✓         | ✓        |
@@ -89,8 +89,8 @@ class ReachCubeEnv(Env):
         # Set the observations space
         self.observation_mode = observation_mode
         observation_subspaces = {
-            "arm_qpos": spaces.Box(low=-np.pi, high=np.pi, shape=(6,)),
-            "arm_qvel": spaces.Box(low=-10.0, high=10.0, shape=(6,)),
+            "agent_pos": spaces.Box(low=-np.pi, high=np.pi, shape=(6,)),
+            "agent_vel": spaces.Box(low=-10.0, high=10.0, shape=(6,)),
         }
         if self.observation_mode in ["image", "both"]:
             observation_subspaces["image_front"] = spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
@@ -228,8 +228,8 @@ class ReachCubeEnv(Env):
         # qpos is [x, y, z, qw, qx, qy, qz, q1, q2, q3, q4, q5, q6, gripper]
         # qvel is [vx, vy, vz, wx, wy, wz, dq1, dq2, dq3, dq4, dq5, dq6, dgripper]
         observation = {
-            "arm_qpos": self.data.qpos[self.arm_dof_id:self.arm_dof_id+self.nb_dof].astype(np.float32),
-            "arm_qvel": self.data.qvel[self.arm_dof_vel_id:self.arm_dof_vel_id+self.nb_dof].astype(np.float32),
+            "agent_pos": self.data.qpos[self.arm_dof_id:self.arm_dof_id+self.nb_dof].astype(np.float32),
+            "agent_vel": self.data.qvel[self.arm_dof_vel_id:self.arm_dof_vel_id+self.nb_dof].astype(np.float32),
         }
         if self.observation_mode in ["image", "both"]:
             self.renderer.update_scene(self.data, camera="camera_front")
