@@ -9,7 +9,7 @@ env = gym.make("LiftCube-v0", render_mode="human")
 # Reset the environment
 observation, info = env.reset()
 
-for _ in range(1000):
+for _ in range(20):
     # Sample random action
     action = env.action_space.sample()
 
@@ -19,3 +19,4 @@ for _ in range(1000):
     # Reset the environment if it's done
     if terminted or truncated:
         observation, info = env.reset()
+env.close()
