@@ -64,7 +64,7 @@ class BaseEnv(gym.Env):
             self.viewer.cam.azimuth = -75
             self.viewer.cam.distance = 1
         elif self.render_mode == "rgb_array":
-            self.rgb_array_renderer = mujoco.Renderer(self.model, height=640, width=640)
+            self.rgb_array_renderer = mujoco.Renderer(self.model, height=observation_height, width=observation_width)
 
         # Set additional utils
         self.threshold_height = 0.5
