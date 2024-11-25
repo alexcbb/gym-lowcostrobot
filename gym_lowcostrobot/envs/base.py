@@ -205,7 +205,7 @@ class BaseEnv(gym.Env):
 
         # Get the position of the cube and the distance between the end effector and the cube
         reward = self.compute_reward()
-        return observation, reward, self.is_done(), False, {}
+        return observation, reward, self.is_done(), False, {"is_success": self.is_done()}
         # Obs, reward, done, trucated, info
 
     def compute_reward(self):
