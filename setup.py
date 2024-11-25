@@ -8,5 +8,6 @@ setup(
     author_email="julien.perez@epita.fr",
     packages=find_packages(),
     include_package_data=True,
-    install_requires=["gymnasium>=0.29", "mujoco==2.3.7", "PyOpenGL>=3.1.4"],
+    install_requires=["gymnasium>=0.29", "gymnasium-robotics>=1.2.4", "mujoco==2.3.7", "PyOpenGL>=3.1.4"],
 )
+

@@ -1,15 +1,9 @@
-import os
-
-import gymnasium as gym
-import mujoco
-import mujoco.viewer
 import numpy as np
-from gymnasium import Env, spaces
 
-from gym_lowcostrobot import ASSETS_PATH, BASE_LINK_NAME
-
-
-class PushCubeLoopEnv(Env):
+from gym_lowcostrobot.envs.base import BaseEnv
+import mujoco
+# TODO : setup the following env later
+class PushCubeLoopEnv(BaseEnv):
     """
     ## Description
 
@@ -74,52 +68,23 @@ class PushCubeLoopEnv(Env):
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 200}
 
-    def __init__(self, observation_mode="image", action_mode="joint", render_mode=None):
-        # Load the MuJoCo model and data
-        self.model = mujoco.MjModel.from_xml_path(os.path.join(ASSETS_PATH, "push_cube_loop.xml"), {})
-        self.data = mujoco.MjData(self.model)
-
-        # Set the action space
-        self.action_mode = action_mode
-        action_shape = {"joint": 6, "ee": 4}[action_mode]
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(action_shape,), dtype=np.float32)
-
-        # Set the observations space
-        self.observation_mode = observation_mode
-        observation_subspaces = {
-            "agent_pos": spaces.Box(low=-np.pi, high=np.pi, shape=(6,)),
-            "agent_vel": spaces.Box(low=-10.0, high=10.0, shape=(6,)),
-        }
-        if self.observation_mode in ["image", "both"]:
-            observation_subspaces["pixels"] = spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
-            observation_subspaces["image_top"] = spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
-            self.renderer = mujoco.Renderer(self.model)
-        if self.observation_mode in ["state", "both"]:
-            observation_subspaces["cube_pos"] = spaces.Box(low=-10.0, high=10.0, shape=(3,))
-        self.observation_space = gym.spaces.Dict(observation_subspaces)
-
-        # Set the render utilities
-        assert render_mode is None or render_mode in self.metadata["render_modes"]
-        self.render_mode = render_mode
-        if self.render_mode == "human":
-            self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
-            self.viewer.cam.azimuth = -75
-            self.viewer.cam.distance = 1
-        elif self.render_mode == "rgb_array":
-            self.rgb_array_renderer = mujoco.Renderer(self.model, height=640, width=640)
-
+    def __init__(
+            self,
+            task,
+            obs_type="pixels",
+            render_mode="rgb_array",
+            observation_width=640,
+            observation_height=480,
+            visualization_width=640,
+            visualization_height=480,
+            action_mode="joint"
+        ):
+        super().__init__(task, obs_type, render_mode, observation_width, observation_height, visualization_width, visualization_height, action_mode)    
         # Set additional utils
         self.threshold_height = 0.5
-        self.nb_dof = 6
 
         # get dof addresses
         self.cube_dof_id = self.model.body("cube").dofadr[0]
-        self.arm_dof_id = self.model.body(BASE_LINK_NAME).dofadr[0]
-        self.arm_dof_vel_id = self.arm_dof_id
-        # if the arm is not at address 0 then the cube will have 7 states in qpos and 6 in qvel
-        if self.arm_dof_id != 0:
-            self.arm_dof_id = self.arm_dof_vel_id + 1
-
         self.cube_low = np.array([-0.15, 0.10, 0.015])
         self.cube_high = np.array([0.15, 0.25, 0.015])
         
@@ -141,125 +106,17 @@ class PushCubeLoopEnv(Env):
         self._step = 0
         # indicators for the reward
 
-
-    def inverse_kinematics(self, ee_target_pos, step=0.2, joint_name="moving_side", nb_dof=6, regularization=1e-6):
-        """
-        Computes the inverse kinematics for a robotic arm to reach the target end effector position.
-
-        :param ee_target_pos: numpy array of target end effector position [x, y, z]
-        :param step: float, step size for the iteration
-        :param joint_name: str, name of the end effector joint
-        :param nb_dof: int, number of degrees of freedom
-        :param regularization: float, regularization factor for the pseudoinverse computation
-        :return: numpy array of target joint positions
-        """
-        try:
-            # Get the joint ID from the name
-            joint_id = self.model.body(joint_name).id
-        except KeyError:
-            raise ValueError(f"Body name '{joint_name}' not found in the model.")
-
-        # Get the current end effector position
-        # ee_pos = self.d.geom_xpos[joint_id]
-        ee_id = self.model.body(joint_name).id
-        ee_pos = self.data.geom_xpos[ee_id]
-
-        # Compute the Jacobian
-        jac = np.zeros((3, self.model.nv))
-        mujoco.mj_jacBodyCom(self.model, self.data, jac, None, joint_id)
-
-        # Compute the difference between target and current end effector positions
-        delta_pos = ee_target_pos - ee_pos
-
-        # Compute the pseudoinverse of the Jacobian with regularization
-        jac_reg = jac[:, :nb_dof].T @ jac[:, :nb_dof] + regularization * np.eye(nb_dof)
-        jac_pinv = np.linalg.inv(jac_reg) @ jac[:, :nb_dof].T
-
-        # Compute target joint velocities
-        qdot = jac_pinv @ delta_pos
-
-        # Normalize joint velocities to avoid excessive movements
-        qdot_norm = np.linalg.norm(qdot)
-        if qdot_norm > 1.0:
-            qdot /= qdot_norm
-  
-        # Read the current joint positions
-        qpos = self.data.qpos[self.arm_dof_id:self.arm_dof_id+nb_dof]
-
-        # Compute the new joint positions
-        q_target_pos = qpos + qdot * step
-
-        return q_target_pos
-
-    def apply_action(self, action):
-        """
-        Step the simulation forward based on the action
-
-        Action shape
-        - EE mode: [dx, dy, dz, gripper]
-        - Joint mode: [q1, q2, q3, q4, q5, q6, gripper]
-        """
-        if self.action_mode == "ee":
-            # raise NotImplementedError("EE mode not implemented yet")
-            ee_action, gripper_action = action[:3], action[-1]
-
-            # Update the robot position based on the action
-            ee_id = self.model.body("moving_side").id
-            ee_target_pos = self.data.xpos[ee_id] + ee_action
-
-            # Use inverse kinematics to get the joint action wrt the end effector current position and displacement
-            target_qpos = self.inverse_kinematics(ee_target_pos=ee_target_pos)
-            target_qpos[-1:] = gripper_action
-        elif self.action_mode == "joint":
-            target_low = np.array([-3.14159, -1.5708, -1.48353, -1.91986, -2.96706, -1.74533])
-            target_high = np.array([3.14159, 1.22173, 1.74533, 1.91986, 2.96706, 0.0523599])
-            target_qpos = np.array(action).clip(target_low, target_high)
-        else:
-            raise ValueError("Invalid action mode, must be 'ee' or 'joint'")
-
-        # Set the target position
-        self.data.ctrl = target_qpos
-
-        # Step the simulation forward
-        for _ in range(self.control_decimation):
-            mujoco.mj_step(self.model, self.data)
-            if self.render_mode == "human":
-                self.viewer.sync()
-
-    def get_observation(self):
-        # qpos is [x, y, z, qw, qx, qy, qz, q1, q2, q3, q4, q5, q6, gripper]
-        # qvel is [vx, vy, vz, wx, wy, wz, dq1, dq2, dq3, dq4, dq5, dq6, dgripper]
-        observation = {
-            "agent_pos": self.data.qpos[self.arm_dof_id:self.arm_dof_id+self.nb_dof].astype(np.float32),
-            "agent_vel": self.data.qvel[self.arm_dof_vel_id:self.arm_dof_vel_id+self.nb_dof].astype(np.float32),
-        }
-        if self.observation_mode in ["image", "both"]:
-            self.renderer.update_scene(self.data, camera="camera_front")
-            observation["pixels"] = self.renderer.render()
-            self.renderer.update_scene(self.data, camera="camera_top")
-            observation["image_top"] = self.renderer.render()
-        if self.observation_mode in ["state", "both"]:
-            observation["cube_pos"] = self.data.qpos[self.cube_dof_id:self.cube_dof_id+3].astype(np.float32)
-        return observation
-
     def reset(self, seed=None, options=None):
-        # We need the following line to seed self.np_random
-        super().reset(seed=seed, options=options)
-
         # Reset the robot to the initial position and sample the cube position
         cube_pos = self.np_random.uniform(self.goal_region_low, self.goal_region_high) 
         cube_pos[:2] += (1 - self.current_goal) * self.goal_region_1_center[:2] \
                       + self.current_goal * self.goal_region_2_center[:2]
 
         cube_rot = np.array([1.0, 0.0, 0.0, 0.0])
-        robot_qpos = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        self.data.qpos[self.arm_dof_id:self.arm_dof_id+self.nb_dof] = robot_qpos
         self.data.qpos[self.cube_dof_id:self.cube_dof_id+7]=np.concatenate([cube_pos, cube_rot])
+        obs, _ = super().reset(seed=seed, options=options)
         
-        # Step the simulation
-        mujoco.mj_forward(self.model, self.data)
-
-        return self.get_observation(), {'timestamp': 0.0}
+        return obs, {'timestamp': 0.0}
 
     def step(self, action):
         # Perform the action and step the simulation
@@ -268,28 +125,14 @@ class PushCubeLoopEnv(Env):
         # Get the new observation
         observation = self.get_observation()
 
-        reward, success = self.get_reward()
+        reward, success = self.compute_reward()
         self._step += 1
-        info = {'timestamp': self.data.time, 'success': success}#self.model.opt.timestep * self._step}
+        info = {'timestamp': self.data.time, 'success': success}
 
         return observation, reward, False, False, info
 
-    def render(self):
-        if self.render_mode == "human":
-            self.viewer.sync()
-        elif self.render_mode == "rgb_array":
-            self.rgb_array_renderer.update_scene(self.data, camera="camera_vizu")
-            return self.rgb_array_renderer.render()
 
-    def close(self):
-        if self.render_mode == "human":
-            self.viewer.close()
-        if self.observation_mode in ["image", "both"]:
-            self.renderer._gl_context.__del__()
-        if self.render_mode == "rgb_array":
-            self.rgb_array_renderer._gl_context.__del__()
-
-    def get_reward(self):
+    def compute_reward(self):
         # Get the position of the cube and the distance between the end effector and the cube
         self.cube_position = self.data.qpos[self.cube_dof_id:self.cube_dof_id+3]
         overlap = self.get_cube_overlap()
