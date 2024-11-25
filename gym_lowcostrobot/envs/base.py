@@ -53,7 +53,7 @@ class BaseEnv(gym.Env):
         if self.obs_type == "pixels":
             observation_subspaces["pixels"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
             observation_subspaces["image_top"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
-            self.renderer = mujoco.Renderer(self.model)
+            self.renderer = mujoco.Renderer(self.model, height=observation_height, width=observation_width)
         self.observation_space = gym.spaces.Dict(observation_subspaces)
 
         # Set the render utilities
