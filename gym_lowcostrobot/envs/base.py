@@ -51,8 +51,8 @@ class BaseEnv(gym.Env):
             "agent_vel": gym.spaces.Box(low=-10.0, high=10.0, shape=(6,)),
         }
         if self.obs_type == "pixels":
-            observation_subspaces["pixels"] = gym.spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
-            observation_subspaces["image_top"] = gym.spaces.Box(0, 255, shape=(240, 320, 3), dtype=np.uint8)
+            observation_subspaces["pixels"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
+            observation_subspaces["image_top"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
             self.renderer = mujoco.Renderer(self.model)
         self.observation_space = gym.spaces.Dict(observation_subspaces)
 
