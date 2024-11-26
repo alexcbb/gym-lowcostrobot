@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 # Create the environment
-env = gym.make("PushCubeLoop-v0", task="push_cube_loop", render_mode="human")
+env = gym.make("PushCubeLoop-v0", task="push_cube_loop", render_mode="human", observation_width=128, observation_height=128)
 observation, info = env.reset()
 
 for _ in range(1000):

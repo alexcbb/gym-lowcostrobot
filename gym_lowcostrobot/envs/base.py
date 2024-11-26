@@ -47,12 +47,12 @@ class BaseEnv(gym.Env):
 
         # Set the observations space
         observation_subspaces = {
-            "agent_pos": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(6,)),
-            "agent_vel": gym.spaces.Box(low=-10.0, high=10.0, shape=(6,)),
+            "observation.state": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(6,)),
+            "observation.velocity": gym.spaces.Box(low=-10.0, high=10.0, shape=(6,)),
         }
         if self.obs_type == "pixels":
-            observation_subspaces["pixels"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
-            observation_subspaces["image_top"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
+            observation_subspaces["observation.image.front"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
+            observation_subspaces["observation.image.top"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
             self.renderer = mujoco.Renderer(self.model, height=observation_height, width=observation_width)
         self.observation_space = gym.spaces.Dict(observation_subspaces)
 
@@ -173,14 +173,14 @@ class BaseEnv(gym.Env):
         # qpos is [x, y, z, qw, qx, qy, qz, q1, q2, q3, q4, q5, q6, gripper]
         # qvel is [vx, vy, vz, wx, wy, wz, dq1, dq2, dq3, dq4, dq5, dq6, dgripper]
         observation = {
-            "agent_pos": self.data.qpos[self.arm_dof_id:self.arm_dof_id+self.nb_dof].astype(np.float32),
-            "agent_vel": self.data.qvel[self.arm_dof_vel_id:self.arm_dof_vel_id+self.nb_dof].astype(np.float32),
+            "observation.state": self.data.qpos[self.arm_dof_id:self.arm_dof_id+self.nb_dof].astype(np.float32),
+            "observation.velocity": self.data.qvel[self.arm_dof_vel_id:self.arm_dof_vel_id+self.nb_dof].astype(np.float32),
         }
         if self.obs_type == "pixels":
             self.renderer.update_scene(self.data, camera="camera_front")
-            observation["pixels"] = self.renderer.render()
+            observation["observation.image.front"] = self.renderer.render()
             self.renderer.update_scene(self.data, camera="camera_top")
-            observation["image_top"] = self.renderer.render()
+            observation["observation.image.top"] = self.renderer.render()
         return observation
 
     def reset(self, seed=None, options=None):
