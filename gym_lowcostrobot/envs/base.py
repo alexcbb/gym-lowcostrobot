@@ -51,8 +51,8 @@ class BaseEnv(gym.Env):
             "observation.velocity": gym.spaces.Box(low=-10.0, high=10.0, shape=(6,)),
         }
         if self.obs_type == "pixels":
-            observation_subspaces["observation.image.front"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
-            observation_subspaces["observation.image.top"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
+            observation_subspaces["observation.images.front"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
+            observation_subspaces["observation.images.top"] = gym.spaces.Box(0, 255, shape=(observation_height, observation_width, 3), dtype=np.uint8)
             self.renderer = mujoco.Renderer(self.model, height=observation_height, width=observation_width)
         self.observation_space = gym.spaces.Dict(observation_subspaces)
 
@@ -178,9 +178,9 @@ class BaseEnv(gym.Env):
         }
         if self.obs_type == "pixels":
             self.renderer.update_scene(self.data, camera="camera_front")
-            observation["observation.image.front"] = self.renderer.render()
+            observation["observation.images.front"] = self.renderer.render()
             self.renderer.update_scene(self.data, camera="camera_top")
-            observation["observation.image.top"] = self.renderer.render()
+            observation["observation.images.top"] = self.renderer.render()
         return observation
 
     def reset(self, seed=None, options=None):
